@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Cable Sizing Calculator</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            padding: 20px;
+        }
+
+        /* Mother div */
+        .solar-cable-sizing {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.12);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            color: #111827;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+            color: #1f2937;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: #f59e0b;
+            color: #111827;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #d97706;
+        }
+
+        .results {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border-left: 5px solid #2563eb;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 9px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-value {
+            font-weight: bold;
+        }
+
+        .recommended {
+            margin-top: 20px;
+            padding: 18px;
+            text-align: center;
+            background: #dcfce7;
+            border-radius: 10px;
+        }
+
+        .recommended h2 {
+            margin: 0 0 5px;
+            color: #166534;
+        }
+
+        .warning {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fef2f2;
+            color: #991b1b;
+            border-left: 5px solid #dc2626;
+            border-radius: 8px;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #eff6ff;
+            color: #1e40af;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- MOTHER DIV -->
+    <div class="solar-cable-sizing">
+
+        <h1>☀️ Solar Cable Sizing</h1>
+
+        <p class="subtitle">
+            Calculate your solar array current and get a preliminary cable size.
+        </p>
+
+        <!-- Number of panels -->
+        <div class="input-group">
+            <label for="panelCount">Number of Panels</label>
+
+            <input
+                type="number"
+                id="panelCount"
+                min="1"
+                placeholder="e.g. 6"
+            >
+        </div>
+
+        <!-- Panel power -->
+        <div class="input-group">
+            <label for="panelPower">
+                Power of Each Panel (Watts)
+            </label>
+
+            <input
+                type="number"
+                id="panelPower"
+                min="1"
+                placeholder="e.g. 550"
+            >
+        </div>
+
+        <!-- Panel voltage -->
+        <div class="input-group">
+            <label for="panelVoltage">
+                Voltage of Each Panel (Volts)
+            </label>
+
+            <input
+                type="number"
+                id="panelVoltage"
+                min="1"
+                step="0.1"
+                placeholder="e.g. 41"
+            >
+        </div>
+
+        <!-- Connection -->
+        <div class="input-group">
+            <label for="connection">
+                Panel Connection
+            </label>
+
+            <select id="connection">
+                <option value="series">Series</option>
+                <option value="parallel">Parallel</option>
+            </select>
+        </div>
+
+        <!-- Manual current -->
+        <div class="input-group">
+            <label for="manualCurrent">
+                Or Enter Current Manually (A)
+            </label>
+
+            <input
+                type="number"
+                id="manualCurrent"
+                min="0"
+                step="0.1"
+                placeholder="Leave empty to calculate from panel data"
+            >
+        </div>
+
+        <button onclick="calculateCable()">
+            CALCULATE CABLE SIZE
+        </button>
+
+
+        <!-- RESULTS -->
+        <div id="results" class="results hidden">
+
+            <div class="result-row">
+                <span>Array Voltage:</span>
+                <span id="arrayVoltage" class="result-value">-</span>
+            </div>
+
+            <div class="result-row">
+                <span>Array Current:</span>
+                <span id="arrayCurrent" class="result-value">-</span>
+            </div>
+
+            <div class="result-row">
+                <span>Design Current (125%):</span>
+                <span id="designCurrent" class="result-value">-</span>
+            </div>
+
+            <div class="recommended">
+                <h2 id="cableSize">-</h2>
+                <p>Preliminary Recommended Cable Size</p>
+            </div>
+
+            <div id="warning" class="warning hidden">
+                ⚠️ The calculated design current exceeds the typical
+                current-carrying capability used here for 6 mm² cable.
+                Consider restructuring the PV array, increasing conductor
+                size, or both. If changing to series, check the inverter/
+                MPPT maximum PV voltage.
+            </div>
+
+        </div>
+
+
+        <!-- INFORMATION -->
+        <div class="info">
+            <strong>Important:</strong>
+
+            This calculator provides a preliminary cable-size selection
+            based on current. Actual cable sizing must also consider cable
+            length, voltage drop, ambient temperature, installation method,
+            cable grouping, conductor material, insulation rating and
+            applicable electrical standards.
+
+            <br><br>
+
+            <strong>PV reminder:</strong>
+            6 mm² is common for solar module cables, but it is not a universal
+            requirement for every solar installation.
+        </div>
+
+    </div>
+
+
+<script>
+
+function calculateCable() {
+
+    const panelCount =
+        Number(document.getElementById("panelCount").value);
+
+    const panelPower =
+        Number(document.getElementById("panelPower").value);
+
+    const panelVoltage =
+        Number(document.getElementById("panelVoltage").value);
+
+    const connection =
+        document.getElementById("connection").value;
+
+    const manualCurrent =
+        Number(document.getElementById("manualCurrent").value);
+
+
+    /*
+        Check whether the user entered enough information.
+    */
+
+    if (
+        panelCount <= 0 ||
+        panelPower <= 0 ||
+        panelVoltage <= 0
+    ) {
+        alert("Please enter valid panel information.");
+        return;
+    }
+
+
+    /*
+        Calculate current of ONE panel.
+
+        P = V × I
+
+        Therefore:
+
+        I = P / V
+    */
+
+    const panelCurrent =
+        panelPower / panelVoltage;
+
+
+    let arrayVoltage;
+    let arrayCurrent;
+
+
+    /*
+        SERIES:
+
+        Voltage adds.
+        Current remains approximately the same.
+
+        Example:
+
+        3 × 40V panels
+        = 120V
+
+        Current remains approximately
+        the current of one panel.
+    */
+
+    if (connection === "series") {
+
+        arrayVoltage =
+            panelVoltage * panelCount;
+
+        arrayCurrent =
+            panelCurrent;
+    }
+
+
+    /*
+        PARALLEL:
+
+        Voltage remains approximately the same.
+        Current adds.
+
+        Example:
+
+        3 panels × 13A
+
+        = 39A
+    */
+
+    else {
+
+        arrayVoltage =
+            panelVoltage;
+
+        arrayCurrent =
+            panelCurrent * panelCount;
+    }
+
+
+    /*
+        If the installer manually entered current,
+        use that value instead.
+    */
+
+    if (manualCurrent > 0) {
+        arrayCurrent = manualCurrent;
+    }
+
+
+    /*
+        Apply a 125% design factor.
+
+        NOTE:
+        The exact design factor and applicable PV
+        requirements depend on the electrical code/
+        standard being followed.
+    */
+
+    const designCurrent =
+        arrayCurrent * 1.25;
+
+
+    /*
+        Preliminary cable selection.
+
+        These are simplified reference values for
+        this calculator, NOT universal ampacity ratings.
+
+        Real ampacity depends on installation conditions.
+    */
+
+    let cableSize;
+
+    if (designCurrent <= 30) {
+
+        cableSize = "4 mm²";
+
+    } else if (designCurrent <= 40) {
+
+        cableSize = "6 mm²";
+
+    } else if (designCurrent <= 55) {
+
+        cableSize = "10 mm²";
+
+    } else if (designCurrent <= 75) {
+
+        cableSize = "16 mm²";
+
+    } else if (designCurrent <= 100) {
+
+        cableSize = "25 mm²";
+
+    } else if (designCurrent <= 135) {
+
+        cableSize = "35 mm²";
+
+    } else if (designCurrent <= 170) {
+
+        cableSize = "50 mm²";
+
+    } else {
+
+        cableSize = "Above 50 mm²";
+    }
+
+
+    /*
+        Put results on screen.
+    */
+
+    document.getElementById("arrayVoltage").textContent =
+        arrayVoltage.toFixed(2) + " V";
+
+    document.getElementById("arrayCurrent").textContent =
+        arrayCurrent.toFixed(2) + " A";
+
+    document.getElementById("designCurrent").textContent =
+        designCurrent.toFixed(2) + " A";
+
+    document.getElementById("cableSize").textContent =
+        cableSize;
+
+
+    /*
+        Show warning if the preliminary result
+        exceeds 6 mm².
+    */
+
+    const warning =
+        document.getElementById("warning");
+
+    if (
+        designCurrent > 40
+    ) {
+
+        warning.classList.remove("hidden");
+
+    } else {
+
+        warning.classList.add("hidden");
+    }
+
+
+    document.getElementById("results")
+        .classList.remove("hidden");
+}
+
+</script>
+
+</body>
+  </html>
